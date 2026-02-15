@@ -4,11 +4,14 @@ import sqlite3
 from datetime import datetime, timezone
 import os
 
+# Database configuration - can be overridden with DB_PATH environment variable
+DB_PATH = os.getenv("DB_PATH", "dicegame.db")
+
 # Initialize databases if they don't exist
 def init_databases():
     """Initialize database tables"""
     # dicegame.db for game data
-    with sqlite3.connect("dicegame.db") as conn:
+    with sqlite3.connect(DB_PATH) as conn:
         cur = conn.cursor()
         
         # Users table
@@ -103,11 +106,11 @@ init_databases()
 
 def get_connection():
     """Get database connection for dicegame.db"""
-    return sqlite3.connect("dicegame.db")
+    return sqlite3.connect(DB_PATH)
 
 def update_balance(user_id: int, new_balance: float):
     """Update user balance in database"""
-    with sqlite3.connect("dicegame.db") as conn:
+    with sqlite3.connect(DB_PATH) as conn:
         cur = conn.cursor()
         cur.execute("""
             INSERT INTO users (user_id, balance, created_at) VALUES (?, ?, ?)
@@ -117,7 +120,7 @@ def update_balance(user_id: int, new_balance: float):
 
 def log_transaction(user_id: int, tx_type: str, amount: float, details: str = ""):
     """Log a transaction to the database"""
-    with sqlite3.connect("dicegame.db") as conn:
+    with sqlite3.connect(DB_PATH) as conn:
         cur = conn.cursor()
         cur.execute("""
             INSERT INTO transactions (user_id, type, amount, details, timestamp)
@@ -126,7 +129,13 @@ def log_transaction(user_id: int, tx_type: str, amount: float, details: str = ""
         conn.commit()
 
 def update_stats(user_id: int, *args):
-    """Update user statistics - flexible signature for compatibility"""
+    """
+    Update user statistics.
+    
+    Supported signatures:
+    - update_stats(user_id, won): Update with boolean win/loss
+    - update_stats(user_id, game_type, bet, payout): Full signature with game details
+    """
     # Handle both (user_id, won) and (user_id, game_type, bet, payout) signatures
     if len(args) == 1:
         won = args[0]
@@ -137,7 +146,7 @@ def update_stats(user_id: int, *args):
     else:
         won = False
         
-    with sqlite3.connect("dicegame.db") as conn:
+    with sqlite3.connect(DB_PATH) as conn:
         cur = conn.cursor()
         if won:
             cur.execute("""

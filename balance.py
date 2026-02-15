@@ -1,10 +1,14 @@
 # balance.py - Balance management adapter
 import sqlite3
 from datetime import datetime, timezone
+import os
+
+# Database configuration - can be overridden with DB_PATH environment variable
+DB_PATH = os.getenv("DB_PATH", "dicegame.db")
 
 def get_balance(user_id: int) -> float:
     """Get user balance from database"""
-    with sqlite3.connect("dicegame.db") as conn:
+    with sqlite3.connect(DB_PATH) as conn:
         cur = conn.cursor()
         cur.execute("SELECT balance FROM users WHERE user_id = ?", (user_id,))
         row = cur.fetchone()
@@ -18,7 +22,7 @@ def get_balance(user_id: int) -> float:
 
 def update_balance(user_id: int, new_balance: float):
     """Update user balance"""
-    with sqlite3.connect("dicegame.db") as conn:
+    with sqlite3.connect(DB_PATH) as conn:
         cur = conn.cursor()
         cur.execute("""
             INSERT INTO users (user_id, balance, created_at) VALUES (?, ?, ?)
@@ -27,8 +31,16 @@ def update_balance(user_id: int, new_balance: float):
         conn.commit()
 
 def add_wager(user_id: int, *args):
-    """Log a wager to the database - flexible signature"""
-    with sqlite3.connect("dicegame.db") as conn:
+    """
+    Log a wager to the database.
+    
+    Supported signatures:
+    - add_wager(user_id, amount): Record wager with amount only
+    - add_wager(user_id, game_type, amount): Record wager with game type
+    - add_wager(user_id, amount, payout): Record wager with payout
+    - add_wager(user_id, game_type, amount, payout): Full signature
+    """
+    with sqlite3.connect(DB_PATH) as conn:
         cur = conn.cursor()
         
         # Handle different call signatures
