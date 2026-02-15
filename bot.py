@@ -73,6 +73,77 @@ except ImportError:
     TON_AVAILABLE = False
     logging.warning("TON library not available. Install with: pip install pytoniq-core")
 
+# --- Feature Files Integration ---
+# Import integrated game modules
+try:
+    from coinflip import (
+        coin_command, coin_side_handler, coin_accept_friend_handler,
+        coin_accept_bot_handler, coin_cancel_handler, coin_flip_handler,
+        coin_verify_handler
+    )
+    COINFLIP_MODULE_AVAILABLE = True
+except ImportError as e:
+    COINFLIP_MODULE_AVAILABLE = False
+    logging.warning(f"Coinflip module not available: {e}")
+
+try:
+    from levels import levels_command, levels_callback_handler
+    from levelup import (
+        levelup_bonus_view, level_claim_handler,
+        noop_locked_handler
+    )
+    LEVELS_MODULE_AVAILABLE = True
+except ImportError as e:
+    LEVELS_MODULE_AVAILABLE = False
+    logging.warning(f"Levels module not available: {e}")
+
+try:
+    from leaderboard import leaderboard_command as lb_command, leaderboard_callback
+    LEADERBOARD_MODULE_AVAILABLE = True
+except ImportError as e:
+    LEADERBOARD_MODULE_AVAILABLE = False
+    logging.warning(f"Leaderboard module not available: {e}")
+
+try:
+    from roulette import roulette_command as roul_command, cb_router
+    ROULETTE_MODULE_AVAILABLE = True
+except ImportError as e:
+    ROULETTE_MODULE_AVAILABLE = False
+    logging.warning(f"Roulette module not available: {e}")
+
+try:
+    from tower import (
+        tower_command as tower_cmd, tower_play, tower_rules,
+        tower_diff_left, tower_diff_right, tower_start,
+        tower_pick, tower_cashout, tower_none
+    )
+    TOWER_MODULE_AVAILABLE = True
+except ImportError as e:
+    TOWER_MODULE_AVAILABLE = False
+    logging.warning(f"Tower module not available: {e}")
+
+try:
+    from wheel import (
+        wheel_command as wheel_cmd, wheel_play_handler,
+        wheel_half_handler, wheel_double_handler,
+        wheel_back_handler, wheel_start_handler,
+        wheel_verify_handler
+    )
+    WHEEL_MODULE_AVAILABLE = True
+except ImportError as e:
+    WHEEL_MODULE_AVAILABLE = False
+    logging.warning(f"Wheel module not available: {e}")
+
+try:
+    from bonus import (
+        bonus_command, bonus_menu, weekly_bonus,
+        claim_bonus, try_to_double
+    )
+    BONUS_MODULE_AVAILABLE = True
+except ImportError as e:
+    BONUS_MODULE_AVAILABLE = False
+    logging.warning(f"Bonus module not available: {e}")
+
 # --- Bot Configuration ---
 BOT_TOKEN = "7956452112:AAGSZVLZz34ep8qCsLKnTRZambI67r_T3ro"
 BOT_OWNER_ID = 6083286836
@@ -5528,6 +5599,7 @@ async def handle_dealer_turn(query, context, game_id):
     )
 
 # 2. COIN FLIP GAME (Enhanced)
+# 2. COIN FLIP GAME - Original /flip command (new /coin command uses coinflip.py module)
 @check_banned
 @check_maintenance
 async def coin_flip_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -14068,6 +14140,17 @@ def main():
     app.add_handler(CommandHandler("games", games_menu)) # New alias
     app.add_handler(CommandHandler("tower", tower_command)) # NEW - Tower game
     app.add_handler(CommandHandler("tr", tower_command)) # NEW - Tower game alias
+    
+    # NEW INTEGRATED GAMES - Add command handlers for new modules
+    if WHEEL_MODULE_AVAILABLE:
+        app.add_handler(CommandHandler("wheel", wheel_cmd))
+    if COINFLIP_MODULE_AVAILABLE:
+        app.add_handler(CommandHandler("coin", coin_command))
+    if LEVELS_MODULE_AVAILABLE:
+        app.add_handler(CommandHandler("levels", levels_command))
+    if BONUS_MODULE_AVAILABLE:
+        app.add_handler(CommandHandler("bonus", bonus_command))
+    
     app.add_handler(CommandHandler("active", active_games_command)) # NEW
     app.add_handler(CommandHandler("activeall", active_all_games_command)) # NEW
     app.add_handler(CommandHandler("reset", reset_recovery_command)) # NEW
@@ -14136,6 +14219,53 @@ def main():
     app.add_handler(CallbackQueryHandler(settings_callback_handler, pattern=r"^settings_"))
     app.add_handler(CallbackQueryHandler(active_all_navigation_callback, pattern=r"^activeall_"))
     app.add_handler(CallbackQueryHandler(withdrawal_cancel_callback, pattern=r"^withdrawal_cancel_")) # NEW - Withdrawal cancellation
+    
+    # NEW INTEGRATED MODULES - Callback handlers
+    if COINFLIP_MODULE_AVAILABLE:
+        app.add_handler(CallbackQueryHandler(coin_side_handler, pattern=r"^coin_side:"))
+        app.add_handler(CallbackQueryHandler(coin_accept_friend_handler, pattern=r"^coin_accept_friend$"))
+        app.add_handler(CallbackQueryHandler(coin_accept_bot_handler, pattern=r"^coin_accept_bot$"))
+        app.add_handler(CallbackQueryHandler(coin_cancel_handler, pattern=r"^coin_cancel$"))
+        app.add_handler(CallbackQueryHandler(coin_flip_handler, pattern=r"^coin_flip$"))
+        app.add_handler(CallbackQueryHandler(coin_verify_handler, pattern=r"^coin_verify$"))
+        app.add_handler(CallbackQueryHandler(coin_command, pattern=r"^coin_start$"))
+        app.add_handler(CallbackQueryHandler(coin_command, pattern=r"^coin_double$"))
+    
+    if WHEEL_MODULE_AVAILABLE:
+        app.add_handler(CallbackQueryHandler(wheel_play_handler, pattern=r"^wheel_play$"))
+        app.add_handler(CallbackQueryHandler(wheel_half_handler, pattern=r"^wheel_half$"))
+        app.add_handler(CallbackQueryHandler(wheel_double_handler, pattern=r"^wheel_double$"))
+        app.add_handler(CallbackQueryHandler(wheel_back_handler, pattern=r"^wheel_back$"))
+        app.add_handler(CallbackQueryHandler(wheel_start_handler, pattern=r"^wheel_start$"))
+        app.add_handler(CallbackQueryHandler(wheel_verify_handler, pattern=r"^wheel_verify$"))
+    
+    if LEVELS_MODULE_AVAILABLE:
+        app.add_handler(CallbackQueryHandler(levels_callback_handler, pattern=r"^levels_"))
+        app.add_handler(CallbackQueryHandler(levelup_bonus_view, pattern=r"^bonus_levelup$"))
+        app.add_handler(CallbackQueryHandler(level_claim_handler, pattern=r"^level_claim$"))
+        app.add_handler(CallbackQueryHandler(noop_locked_handler, pattern=r"^noop_locked$"))
+    
+    if LEADERBOARD_MODULE_AVAILABLE:
+        app.add_handler(CallbackQueryHandler(leaderboard_callback, pattern=r"^lb:"))
+    
+    if BONUS_MODULE_AVAILABLE:
+        app.add_handler(CallbackQueryHandler(bonus_menu, pattern=r"^bonus_menu$"))
+        app.add_handler(CallbackQueryHandler(weekly_bonus, pattern=r"^bonus_weekly$"))
+        app.add_handler(CallbackQueryHandler(claim_bonus, pattern=r"^claim_bonus$"))
+        app.add_handler(CallbackQueryHandler(try_to_double, pattern=r"^try_double$"))
+    
+    if TOWER_MODULE_AVAILABLE:
+        app.add_handler(CallbackQueryHandler(tower_play, pattern=r"^tower_play$"))
+        app.add_handler(CallbackQueryHandler(tower_rules, pattern=r"^tower_rules$"))
+        app.add_handler(CallbackQueryHandler(tower_diff_left, pattern=r"^tower_diff_left$"))
+        app.add_handler(CallbackQueryHandler(tower_diff_right, pattern=r"^tower_diff_right$"))
+        app.add_handler(CallbackQueryHandler(tower_start, pattern=r"^tower_start$"))
+        app.add_handler(CallbackQueryHandler(tower_cashout, pattern=r"^tower_cashout$"))
+        app.add_handler(CallbackQueryHandler(tower_none, pattern=r"^tower_none$"))
+        app.add_handler(CallbackQueryHandler(tower_pick, pattern=r"^tower_pick:\d+:\d+$"))
+    
+    if ROULETTE_MODULE_AVAILABLE:
+        app.add_handler(CallbackQueryHandler(cb_router, pattern=r"^{"))  # JSON callbacks
     
     # Provably Fair Callbacks (OLD SYSTEM - REMOVED, now using deep links to DM)
     # app.add_handler(CallbackQueryHandler(pf_rotate_seeds_callback, pattern=r"^pf_rotate_seeds$"))
